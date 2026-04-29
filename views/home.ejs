@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OFPPT Social</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <a class="brand" href="/">
+        <span class="brand-mark">OS</span>
+        OFPPT Social
+    </a>
+
+    <div class="search-bar">
+        <input type="search" placeholder="Rechercher...">
+    </div>
+
+    <div class="nav-links">
+        <a class="active" href="/">Accueil</a>
+        <a href="/profile">Profil</a>
+        <% if (currentUser) { %>
+            <a href="/logout">Déconnexion</a>
+            <% if (currentUser.profileImage) { %>
+                <img class="nav-avatar avatar-image" src="<%= currentUser.profileImage %>" alt="Photo de profil">
+            <% } else { %>
+                <span class="nav-avatar"><%= currentUser.username.slice(0, 2).toUpperCase() %></span>
+            <% } %>
+        <% } else { %>
+            <a href="/login">Connexion</a>
+            <a href="/register">Inscription</a>
+        <% } %>
+    </div>
+</nav>
+
+<header class="hero-banner">
+    <div class="hero-content">
+        <p>OFPPT</p>
+        <h1>La voie de l’avenir</h1>
+        <span>Former les compétences d’aujourd’hui pour les métiers de demain.</span>
+    </div>
+</header>
+
+<main class="layout">
+    <section class="feed-column">
+        <section class="composer card">
+            <% if (currentUser) { %>
+                <form action="/post" method="POST" class="composer-form" enctype="multipart/form-data">
+                    <div class="composer-row">
+                        <% if (currentUser.profileImage) { %>
+                            <img class="avatar small-avatar avatar-image" src="<%= currentUser.profileImage %>" alt="Photo de profil">
+                        <% } else { %>
+                            <div class="avatar small-avatar"><%= currentUser.username.slice(0, 2).toUpperCase() %></div>
+                        <% } %>
+                        <textarea name="content" placeholder="Quoi de neuf ?" maxlength="2000"></textarea>
+                    </div>
+
+                    <div class="composer-actions">
+                        <div class="composer-tools">
+                            <label class="upload-button">
+                                Photo
+                                <input type="file" name="image" accept="image/*">
+                            </label>
+                            <button type="button">Humeur</button>
+                            <button type="button">Lieu</button>
+                        </div>
+                        <button type="submit" class="primary-button">Publier</button>
+                    </div>
+                </form>
+            <% } else { %>
+                <div class="login-callout">
+                    <h2>Connectez-vous pour publier</h2>
+                    <p>Vous pouvez lire les publications. Pour participer, creez un compte ou connectez-vous.</p>
+                    <div>
+                        <a class="primary-link" href="/login">Connexion</a>
+                        <a class="secondary-link" href="/register">Inscription</a>
+                    </div>
+                </div>
+            <% } %>
+        </section>
+
+        <section class="posts">
+            <% if (posts.length === 0) { %>
+                <div class="empty-state card">
+                    <p>Aucune publication pour le moment. Publiez votre premier post.</p>
+                </div>
+            <% } %>
+
+            <% posts.forEach(post => { %>
+                <% const isPostOwner = post.authorId && post.authorId.toString() === currentUser._id.toString(); %>
+                <% const postAuthorImage = post.authorId ? userImagesById[post.authorId.toString()] : null; %>
+                <article class="post card">
+                    <div class="post-header">
+                        <% if (postAuthorImage) { %>
+                            <img class="avatar avatar-image" src="<%= postAuthorImage %>" alt="Photo de profil">
+                        <% } else { %>
+                            <div class="avatar"><%= (post.author || 'NU').slice(0, 2).toUpperCase() %></div>
+                        <% } %>
+                        <div class="post-author">
+                            <h3><%= post.author || 'Nom Utilisateur' %></h3>
+                            <p>Publication OFPPT</p>
+                        </div>
+                    </div>
+
+                    <% if (post.content) { %>
+                        <p class="post-content"><%= post.content %></p>
+                    <% } %>
+
+                    <% if (post.imageUrl) { %>
+                        <img class="post-image" src="<%= post.imageUrl %>" alt="Image de publication">
+                    <% } %>
+
+                    <% if (isPostOwner) { %>
+                        <details class="edit-panel">
+                            <summary>Modifier la publication</summary>
+                            <form action="/post/<%= post._id %>/edit" method="POST" class="edit-post-form">
+                                <textarea name="content" required maxlength="2000"><%= post.content %></textarea>
+                                <button type="submit">Enregistrer</button>
+                            </form>
+                        </details>
+                    <% } %>
+
+                    <div class="post-actions">
+                        <form action="/post/<%= post._id %>/like" method="POST" class="like-form">
+                            <button
+                                class="like-button <%= (post.likedBy || []).includes(likeUserId) ? 'liked' : '' %>"
+                                type="submit"
+                                <%= (post.likedBy || []).includes(likeUserId) ? 'disabled' : '' %>
+                            >
+                                <%= (post.likedBy || []).includes(likeUserId) ? 'Liked' : 'Like' %>
+                            </button>
+                        </form>
+                        <span class="like-count" data-like-count><%= post.likes %> likes</span>
+                        <span class="comment-total"><%= (post.comments || []).length %> commentaires</span>
+                        <% if (isPostOwner) { %>
+                            <form action="/post/<%= post._id %>/delete" method="POST" class="delete-form">
+                                <button class="danger-button" type="submit">Supprimer</button>
+                            </form>
+                        <% } %>
+                    </div>
+
+                    <div class="comments">
+                        <h4>Commentaires (<span data-comments-count><%= (post.comments || []).length %></span>)</h4>
+
+                        <% if ((post.comments || []).length === 0) { %>
+                            <p class="no-comments" data-no-comments>Aucun commentaire pour le moment.</p>
+                        <% } %>
+
+                        <div class="comments-list" data-comments-list>
+                            <% (post.comments || []).forEach(comment => { %>
+                                <% const canDeleteComment = isPostOwner || (comment.authorId && comment.authorId.toString() === currentUser._id.toString()); %>
+                                <% const commentAuthorImage = comment.authorId ? userImagesById[comment.authorId.toString()] : null; %>
+                                <div class="comment">
+                                    <% if (commentAuthorImage) { %>
+                                        <img class="avatar comment-avatar avatar-image" src="<%= commentAuthorImage %>" alt="Photo de profil">
+                                    <% } else { %>
+                                        <div class="avatar comment-avatar"><%= (comment.author || 'NU').slice(0, 2).toUpperCase() %></div>
+                                    <% } %>
+                                    <div class="comment-body">
+                                        <div class="comment-meta">
+                                            <strong><%= comment.author %></strong>
+                                            <% if (canDeleteComment) { %>
+                                                <form action="/post/<%= post._id %>/comment/<%= comment._id %>/delete" method="POST" class="delete-comment-form">
+                                                    <button type="submit">Supprimer</button>
+                                                </form>
+                                            <% } %>
+                                        </div>
+                                        <p><%= comment.text || comment.content %></p>
+                                    </div>
+                                </div>
+                            <% }) %>
+                        </div>
+
+                        <% if (currentUser) { %>
+                            <form action="/posts/<%= post._id %>/comment" method="POST" class="comment-form">
+                                <input type="text" name="text" placeholder="Ecrire un commentaire..." required maxlength="500">
+                                <button type="submit">Commenter</button>
+                            </form>
+                        <% } else { %>
+                            <p class="comment-login">Connectez-vous pour commenter.</p>
+                        <% } %>
+                    </div>
+                </article>
+            <% }) %>
+        </section>
+    </section>
+
+    <aside class="sidebar right-sidebar">
+        <section class="suggestions card">
+            <h2>Suggestions</h2>
+
+            <% if (!suggestedUsers || suggestedUsers.length === 0) { %>
+                <p class="suggestions-empty">Aucun autre utilisateur pour le moment.</p>
+            <% } %>
+
+            <% (suggestedUsers || []).forEach(user => { %>
+                <% const isFollowing = followedUserIds.includes(user._id.toString()); %>
+                <div class="person">
+                    <% if (user.profileImage) { %>
+                        <img class="avatar small-avatar avatar-image" src="<%= user.profileImage %>" alt="Photo de profil">
+                    <% } else { %>
+                        <div class="avatar small-avatar"><%= user.username.slice(0, 2).toUpperCase() %></div>
+                    <% } %>
+                    <div>
+                        <strong><%= user.username %></strong>
+                        <span><%= (user.followers || []).length %> followers</span>
+                    </div>
+                    <form action="/users/<%= user._id %>/<%= isFollowing ? 'unfollow' : 'follow' %>" method="POST" class="follow-form">
+                        <button class="follow-button <%= isFollowing ? 'is-following' : '' %>" type="submit">
+                            <%= isFollowing ? 'Unfollow' : 'Follow' %>
+                        </button>
+                    </form>
+                </div>
+            <% }) %>
+        </section>
+
+        <section class="trends card">
+            <h2>Tendances</h2>
+            <a href="#">
+                <strong>#Laravel</strong>
+                <span>25 publications</span>
+            </a>
+            <a href="#">
+                <strong>#OFPPT</strong>
+                <span>18 publications</span>
+            </a>
+            <a href="#">
+                <strong>#MongoDB</strong>
+                <span>10 publications</span>
+            </a>
+        </section>
+
+        <section class="profile-card card">
+            <% if (currentUser && currentUser.profileImage) { %>
+                <img class="profile-avatar avatar-image" src="<%= currentUser.profileImage %>" alt="Photo de profil">
+            <% } else { %>
+                <div class="profile-avatar"><%= currentUser ? currentUser.username.slice(0, 2).toUpperCase() : 'NU' %></div>
+            <% } %>
+            <h2><%= currentUser ? currentUser.username : 'Invite' %></h2>
+            <p>Stagiaire en Developpement Digital</p>
+
+            <div class="stats">
+                <div>
+                    <strong><%= posts.length %></strong>
+                    <span>Posts</span>
+                </div>
+                <div>
+                    <strong><%= posts.reduce((total, post) => total + post.likes, 0) %></strong>
+                    <span>Likes</span>
+                </div>
+                <div>
+                    <strong><%= posts.reduce((total, post) => total + (post.comments || []).length, 0) %></strong>
+                    <span>Commentaires</span>
+                </div>
+            </div>
+        </section>
+    </aside>
+</main>
+
+<footer class="footer">
+    <p>© 2026 OFPPT Social. Tous droits réservés.</p>
+</footer>
+
+<script src="/likes.js"></script>
+</body>
+</html>

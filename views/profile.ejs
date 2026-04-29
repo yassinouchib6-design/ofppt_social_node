@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profil - OFPPT Social</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body class="profile-page">
+
+<nav class="navbar profile-navbar">
+    <a class="brand" href="/">
+        <span class="brand-mark">OS</span>
+        OFPPT Social
+    </a>
+
+    <div class="search-bar">
+        <input type="search" placeholder="Rechercher...">
+    </div>
+
+    <div class="nav-links">
+        <a href="/">Accueil</a>
+        <a class="active" href="/profile">Profil</a>
+        <a href="/logout">Déconnexion</a>
+        <% if (currentUser.profileImage) { %>
+            <img class="nav-avatar avatar-image" src="<%= currentUser.profileImage %>" alt="Photo de profil">
+        <% } else { %>
+            <span class="nav-avatar"><%= currentUser.username.slice(0, 2).toUpperCase() %></span>
+        <% } %>
+    </div>
+</nav>
+
+<main class="profile-shell">
+    <section class="profile-hero card">
+        <div class="profile-cover"></div>
+        <div class="profile-summary">
+            <% if (currentUser.profileImage) { %>
+                <img class="profile-avatar-large profile-image-large" src="<%= currentUser.profileImage %>" alt="Photo de profil">
+            <% } else { %>
+                <div class="profile-avatar-large">
+                    <%= currentUser.username.slice(0, 2).toUpperCase() %>
+                </div>
+            <% } %>
+            <h1><%= currentUser.username %></h1>
+            <span class="profile-email"><%= currentUser.email %></span>
+            <p>Stagiaire OFPPT en Developpement Digital. Partage de projets, apprentissage et vie de campus.</p>
+            <form action="/profile/upload-photo" method="POST" enctype="multipart/form-data" class="profile-photo-form">
+                <label class="profile-photo-input">
+                    Choisir une image
+                    <input type="file" name="profileImage" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" required>
+                </label>
+                <button type="submit">Changer la photo</button>
+            </form>
+        </div>
+    </section>
+
+    <section class="profile-stats card" aria-label="Statistiques du profil">
+        <div>
+            <strong><%= posts.length %></strong>
+            <span>Posts</span>
+        </div>
+        <div>
+            <strong><%= (currentUser.followers || []).length %></strong>
+            <span>Followers</span>
+        </div>
+        <div>
+            <strong><%= (currentUser.following || []).length %></strong>
+            <span>Following</span>
+        </div>
+    </section>
+
+    <section class="profile-posts">
+        <div class="profile-section-title">
+            <h2>Mes publications</h2>
+            <span><%= posts.length %> post<%= posts.length === 1 ? '' : 's' %></span>
+        </div>
+
+        <% if (posts.length === 0) { %>
+            <div class="profile-empty card">
+                <h3>Aucune publication</h3>
+                <p>Vos posts apparaitront ici des que vous publierez depuis l'accueil.</p>
+                <a class="primary-link" href="/">Publier maintenant</a>
+            </div>
+        <% } %>
+
+        <% posts.forEach(post => { %>
+            <article class="profile-post-card post card">
+                <div class="post-header">
+                    <% if (currentUser.profileImage) { %>
+                        <img class="avatar avatar-image" src="<%= currentUser.profileImage %>" alt="Photo de profil">
+                    <% } else { %>
+                        <div class="avatar"><%= currentUser.username.slice(0, 2).toUpperCase() %></div>
+                    <% } %>
+                    <div class="post-author">
+                        <h3><%= currentUser.username %></h3>
+                        <p><%= post.createdAt ? new Date(post.createdAt).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Date indisponible' %></p>
+                    </div>
+                </div>
+
+                <% if (post.content) { %>
+                    <p class="post-content"><%= post.content %></p>
+                <% } %>
+
+                <% if (post.imageUrl) { %>
+                    <img class="post-image" src="<%= post.imageUrl %>" alt="Image de publication">
+                <% } %>
+
+                <div class="profile-post-meta">
+                    <span><strong><%= post.likes %></strong> likes</span>
+                    <span><strong><%= (post.comments || []).length %></strong> commentaires</span>
+                    <span><%= post.createdAt ? new Date(post.createdAt).toLocaleDateString('fr-FR') : 'Date indisponible' %></span>
+                </div>
+            </article>
+        <% }) %>
+    </section>
+</main>
+
+<script src="/likes.js"></script>
+</body>
+</html>

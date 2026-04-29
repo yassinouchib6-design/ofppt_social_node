@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - OFPPT Social</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body class="auth-page">
+
+<main class="auth-shell">
+    <section class="auth-card card">
+        <a class="brand" href="/">OFPPT Social</a>
+        <h1><%= title %></h1>
+
+        <% if (error) { %>
+            <p class="auth-error"><%= error %></p>
+        <% } %>
+
+        <form action="<%= action %>" method="POST" class="auth-form">
+            <label>
+                <%= mode === 'login' ? 'Username or email' : 'Username' %>
+                <input type="text" name="username" required minlength="3" maxlength="30">
+            </label>
+
+            <% if (mode === 'register') { %>
+                <label>
+                    Email
+                    <input type="email" name="email" required>
+                </label>
+            <% } %>
+
+            <label>
+                Password
+                <input type="password" name="password" required minlength="<%= mode === 'register' ? 8 : 1 %>">
+            </label>
+
+            <button type="submit" class="primary-button">
+                <%= mode === 'login' ? 'Connexion' : 'Inscription' %>
+            </button>
+        </form>
+
+        <% if (mode === 'login') { %>
+            <p class="auth-switch">Pas encore de compte ? <a href="/register">Inscription</a></p>
+        <% } else { %>
+            <p class="auth-switch">Deja un compte ? <a href="/login">Connexion</a></p>
+        <% } %>
+    </section>
+</main>
+
+</body>
+</html>
