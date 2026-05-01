@@ -27,6 +27,7 @@
         <% } else { %>
             <span class="nav-avatar"><%= currentUser.username.slice(0, 2).toUpperCase() %></span>
         <% } %>
+        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Changer le theme"></button>
     </div>
 </nav>
 
@@ -117,5 +118,6 @@
 </main>
 
 <script src="/likes.js"></script>
+<script src="/theme.js"></script>
 </body>
 </html>
