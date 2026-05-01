@@ -33,6 +33,10 @@ const postSchema = new mongoose.Schema(
       trim: true,
       maxlength: 2000
     },
+    image: {
+      type: String,
+      default: ''
+    },
     imageUrl: {
       type: String,
       default: ''

@@ -11,8 +11,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const MONGO_URI = 'mongodb://127.0.0.1:27017/ofppt_social';
 const uploadDir = path.join(__dirname, 'public', 'uploads');
-const allowedImageExtensions = new Set(['.jpg', '.jpeg', '.png', '.webp']);
-const allowedImageMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const allowedImageExtensions = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif']);
 
 fs.mkdirSync(uploadDir, { recursive: true });
 
@@ -33,8 +32,8 @@ const upload = multer({
   },
   fileFilter: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
-    if (!allowedImageExtensions.has(ext) || !allowedImageMimeTypes.has(file.mimetype)) {
-      return cb(new Error('Only JPG, JPEG, PNG, and WEBP image files are allowed.'));
+    if (!allowedImageExtensions.has(ext) || !file.mimetype.startsWith('image/')) {
+      return cb(new Error('Only image files are allowed.'));
     }
 
     cb(null, true);
@@ -149,6 +148,18 @@ async function getUserImagesById(userIds) {
   }, {});
 }
 
+async function getUserSearchById(userIds) {
+  if (userIds.length === 0) {
+    return {};
+  }
+
+  const users = await User.find({ _id: { $in: userIds } }).select('username email');
+  return users.reduce((searchById, user) => {
+    searchById[user._id.toString()] = [user.username, user.email].filter(Boolean).join(' ');
+    return searchById;
+  }, {});
+}
+
 // routes
 app.get('/', requireAuth, async (req, res) => {
   try {
@@ -156,12 +167,17 @@ app.get('/', requireAuth, async (req, res) => {
       Post.find().sort({ createdAt: -1 }),
       User.find({ _id: { $ne: req.currentUser._id } }).sort({ username: 1 }).limit(8)
     ]);
-    const userImagesById = await getUserImagesById(collectUserIdsFromPosts(posts));
+    const postUserIds = collectUserIdsFromPosts(posts);
+    const [userImagesById, userSearchById] = await Promise.all([
+      getUserImagesById(postUserIds),
+      getUserSearchById(postUserIds)
+    ]);
 
     res.render('home', {
       posts,
       suggestedUsers,
       userImagesById,
+      userSearchById,
       followedUserIds: (req.currentUser.following || []).map((userId) => userId.toString()),
       likeUserId: req.currentUser._id.toString(),
       currentUser: req.currentUser
@@ -377,26 +393,32 @@ app.get('/logout', (req, res) => {
   });
 });
 
-app.post('/post', requireAuth, upload.single('image'), async (req, res) => {
-  try {
-    const content = normalizeText(req.body.content);
-    const imageUrl = req.file ? `/uploads/${req.file.filename}` : '';
+app.post('/post', requireAuth, (req, res) => {
+  upload.single('image')(req, res, async (uploadError) => {
+    try {
+      if (uploadError) {
+        return res.status(400).send(uploadError.message || 'Unable to upload image.');
+      }
 
-    if (!content && !imageUrl) {
-      return res.status(400).send('Post content or image is required.');
+      const content = normalizeText(req.body.content);
+      const image = req.file ? `/uploads/${req.file.filename}` : '';
+
+      if (!content && !image) {
+        return res.status(400).send('Post content or image is required.');
+      }
+
+      await Post.create({
+        content,
+        image,
+        author: req.currentUser.username,
+        authorId: req.currentUser._id
+      });
+      res.redirect('/');
+    } catch (error) {
+      console.error('Failed to create post:', error.message);
+      res.status(400).send(error.message || 'Unable to create post.');
     }
-
-    await Post.create({
-      content,
-      imageUrl,
-      author: req.currentUser.username,
-      authorId: req.currentUser._id
-    });
-    res.redirect('/');
-  } catch (error) {
-    console.error('Failed to create post:', error.message);
-    res.status(400).send(error.message || 'Unable to create post.');
-  }
+  });
 });
 
 app.post('/post/:id/edit', requireAuth, async (req, res) => {

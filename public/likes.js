@@ -122,3 +122,36 @@ document.querySelectorAll('.comment-form').forEach((form) => {
         }
     });
 });
+
+const postSearchInput = document.querySelector('[data-post-search]');
+const searchablePosts = Array.from(document.querySelectorAll('[data-search-text]'));
+const searchEmptyState = document.querySelector('[data-search-empty]');
+
+function normalizeSearchText(value) {
+    return value
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+}
+
+if (postSearchInput && searchablePosts.length > 0) {
+    postSearchInput.addEventListener('input', () => {
+        const query = normalizeSearchText(postSearchInput.value.trim());
+        let visiblePosts = 0;
+
+        searchablePosts.forEach((post) => {
+            const searchableText = normalizeSearchText(post.dataset.searchText || '');
+            const isMatch = query === '' || searchableText.includes(query);
+
+            post.hidden = !isMatch;
+
+            if (isMatch) {
+                visiblePosts += 1;
+            }
+        });
+
+        if (searchEmptyState) {
+            searchEmptyState.hidden = query === '' || visiblePosts > 0;
+        }
+    });
+}

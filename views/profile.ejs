@@ -101,8 +101,9 @@
                     <p class="post-content"><%= post.content %></p>
                 <% } %>
 
-                <% if (post.imageUrl) { %>
-                    <img class="post-image" src="<%= post.imageUrl %>" alt="Image de publication">
+                <% const postImage = post.image || post.imageUrl; %>
+                <% if (postImage) { %>
+                    <img class="post-image" src="<%= postImage %>" alt="Image de publication">
                 <% } %>
 
                 <div class="profile-post-meta">

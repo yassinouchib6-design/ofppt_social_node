@@ -15,7 +15,7 @@
     </a>
 
     <div class="search-bar">
-        <input type="search" placeholder="Rechercher...">
+        <input type="search" placeholder="Rechercher..." data-post-search aria-label="Rechercher une publication">
     </div>
 
     <div class="nav-links">
@@ -81,7 +81,7 @@
             <% } %>
         </section>
 
-        <section class="posts">
+        <section class="posts" data-posts-list>
             <% if (posts.length === 0) { %>
                 <div class="empty-state card">
                     <p>Aucune publication pour le moment. Publiez votre premier post.</p>
@@ -90,26 +90,31 @@
 
             <% posts.forEach(post => { %>
                 <% const isPostOwner = post.authorId && post.authorId.toString() === currentUser._id.toString(); %>
+                <% const postAuthorId = post.authorId ? post.authorId.toString() : ''; %>
                 <% const postAuthorImage = post.authorId ? userImagesById[post.authorId.toString()] : null; %>
-                <article class="post card">
+                <% const postSearchText = [post.content, post.author, postAuthorId ? userSearchById[postAuthorId] : ''].filter(Boolean).join(' '); %>
+                <article class="post card" data-search-text="<%= postSearchText %>">
                     <div class="post-header">
-                        <% if (postAuthorImage) { %>
-                            <img class="avatar avatar-image" src="<%= postAuthorImage %>" alt="Photo de profil">
-                        <% } else { %>
-                            <div class="avatar"><%= (post.author || 'NU').slice(0, 2).toUpperCase() %></div>
-                        <% } %>
-                        <div class="post-author">
-                            <h3><%= post.author || 'Nom Utilisateur' %></h3>
-                            <p>Publication OFPPT</p>
+                        <div class="post-author-row">
+                            <% if (postAuthorImage) { %>
+                                <img class="avatar avatar-image" src="<%= postAuthorImage %>" alt="Photo de profil">
+                            <% } else { %>
+                                <div class="avatar"><%= (post.author || 'NU').slice(0, 2).toUpperCase() %></div>
+                            <% } %>
+                            <div class="post-author">
+                                <h3><%= post.author || 'Nom Utilisateur' %></h3>
+                                <p>Publication OFPPT</p>
+                            </div>
                         </div>
+                        <button class="post-menu-button" type="button" aria-label="Options de publication">&bull;&bull;&bull;</button>
                     </div>
 
                     <% if (post.content) { %>
                         <p class="post-content"><%= post.content %></p>
                     <% } %>
 
-                    <% if (post.imageUrl) { %>
-                        <img class="post-image" src="<%= post.imageUrl %>" alt="Image de publication">
+                    <% if (post.image) { %>
+                        <img src="<%= post.image %>" class="post-image" alt="Post image">
                     <% } %>
 
                     <% if (isPostOwner) { %>
@@ -123,17 +128,20 @@
                     <% } %>
 
                     <div class="post-actions">
-                        <form action="/post/<%= post._id %>/like" method="POST" class="like-form">
-                            <button
-                                class="like-button <%= (post.likedBy || []).includes(likeUserId) ? 'liked' : '' %>"
-                                type="submit"
-                                <%= (post.likedBy || []).includes(likeUserId) ? 'disabled' : '' %>
-                            >
-                                <%= (post.likedBy || []).includes(likeUserId) ? 'Liked' : 'Like' %>
-                            </button>
-                        </form>
-                        <span class="like-count" data-like-count><%= post.likes %> likes</span>
-                        <span class="comment-total"><%= (post.comments || []).length %> commentaires</span>
+                        <div class="post-action-row">
+                            <form action="/post/<%= post._id %>/like" method="POST" class="like-form">
+                                <button
+                                    class="like-button <%= (post.likedBy || []).includes(likeUserId) ? 'liked' : '' %>"
+                                    type="submit"
+                                    <%= (post.likedBy || []).includes(likeUserId) ? 'disabled' : '' %>
+                                >
+                                    <%= (post.likedBy || []).includes(likeUserId) ? 'Liked' : 'Like' %>
+                                </button>
+                            </form>
+                            <span class="like-count" data-like-count><%= post.likes %> likes</span>
+                            <span class="comment-total"><%= (post.comments || []).length %> commentaires</span>
+                            <button class="share-button" type="button" aria-label="Partager la publication">Partager</button>
+                        </div>
                         <% if (isPostOwner) { %>
                             <form action="/post/<%= post._id %>/delete" method="POST" class="delete-form">
                                 <button class="danger-button" type="submit">Supprimer</button>
@@ -184,6 +192,10 @@
                     </div>
                 </article>
             <% }) %>
+
+            <div class="search-empty-state card" data-search-empty hidden>
+                <p>Aucun résultat trouvé</p>
+            </div>
         </section>
     </section>
 
